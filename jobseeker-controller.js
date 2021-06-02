@@ -7,7 +7,7 @@ import SaveJob from "../models/savedjobs-model"
 export const jobseeker=(req,res)=>{
     Jobseeker.findOne({email:req.body.email})
     .exec(async (error,jober)=>{
-        if(jober) return res.status(400).json({message:"jobseeker already registered"})
+        if(jober) return res.status(201).json({message:"jobseeker already registered"})
 
      const {fullname,email,password,phone,qualification,stream,skills,exp,location}=req.body
 
@@ -40,7 +40,7 @@ export const jobseeker=(req,res)=>{
 export const jobsekersignin=(req,res)=>{
     Jobseeker.findOne({email:req.body.email})
     .exec((err,user)=>{
-        if(err) return res.status(400).json({message:err})
+        if(err) return res.status(201).json({message:err})
 
         if(user){
             const {_id,fullname,email,password,phone,qualification,stream,skills,exp,location}=user
@@ -66,7 +66,7 @@ export const jobsekersignin=(req,res)=>{
             return res.status(500).json({message:'invalid password '})
         }
     }else{
-        return res.status(400).json({message:'invalid email id'})
+        return res.status(201).json({message:'invalid email id'})
     }
    
     })
@@ -76,8 +76,12 @@ export const jobsekersignin=(req,res)=>{
 export const findJobs=async(req,res)=>{
     try{
         let jobs=await Post.find({jobtitle:req.params.jobtitle,location:req.params.location})
-        return res.status(200).send(jobs)
-
+       console.log(jobs)
+        if(jobs.length !=0){ 
+            return res.status(200).send(jobs)
+       }else{
+           return res.status(201).json({message:"no jobs found"})
+       }
     }catch(err){
         return res.status(500).send({"message":`error${err}`})
     }
@@ -179,29 +183,37 @@ export const getApplied=async (req,res)=>{
 }
 
 export const savejob=async(req,res)=>{
-    const j=await SaveJob.findOne({seekerEmail:req.body.seekerEmail,jobid:req.body.jobid})
-    if(j) return res.status(400).send("job already saved")
-    let saveR = new SaveJob({
-        jobid:req.body.jobid,
-        jobtitle: req.body.jobtitle,
-        companyname:req.body.companyname,
-        name:req.body.name,
-        email:req.body.email,
-        description:req.body.description,
-        salary:req.body.salary,
-        jobtype:req.body.jobtype,
-        exp:req.body.exp,
-        persons:req.body.persons,
-        location:req.body.location,
-        seekerEmail:req.body.seekerEmail
-    })
-        saveR= await saveR.save();
-        if(!saveR)
-        return res.status(500).send('The cannot be saved')
-        res.status(200).json({message:"saved successfully.."});
-    
-}
+    console.log(req.body.seekerEmail)
+    console.log(req.body.jobid)
+     SaveJob.findOne({seekerEmail:req.body.seekerEmail,jobid:req.body.jobid})
+    .exec(async(error,sajob)=>{
+        console.log('hello')
+        if(sajob) return res.status(400).send("job already saved")
+        let saveR = new SaveJob({
+            jobid:req.body.jobid,
+            jobtitle: req.body.jobtitle,
+            companyname:req.body.companyname,
+            name:req.body.name,
+            email:req.body.email,
+            description:req.body.description,
+            salary:req.body.salary,
+            jobtype:req.body.jobtype,
+            exp:req.body.exp,
+            persons:req.body.persons,
+            location:req.body.location,
+            seekerEmail:req.body.seekerEmail,
 
+        })
+        console.log(req.body.name)
+            saveR= await saveR.save();
+            if(!saveR)
+            return res.status(500).send('The cannot be saved')
+            res.status(200).json({message:"saved successfully.."});
+        
+    
+    })
+   
+}
 export const getsaved=async(req,res)=>{
     try{
         const seeker=await SaveJob.find({seekerEmail:req.params.seekerEmail})
@@ -211,4 +223,25 @@ export const getsaved=async(req,res)=>{
     }
 }
 
+export const deleteSavedjob=async(req,res)=>{
+    try{
+     SaveJob.findByIdAndRemove(req.params.id).then(Jobdata=>{
+        return res.status(200).send(Jobdata)
+     })          
 
+    }catch(err){
+        return res.status(500).send({'message':`delete error ${err}`})
+    }
+}
+
+
+export const getCount=async(req,res)=>{
+    const count=await SaveJob.countDocuments((count)=>count)
+
+    if(!count){
+        res.status(500).json({success:false})
+    }
+    res.status({
+        count:count
+    })
+}
